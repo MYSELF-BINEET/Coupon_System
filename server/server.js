@@ -34,7 +34,16 @@ app.get('/api/status', (req, res) => {
   res.json({ status: 'online' });
 });
 
+app.get("/api/online",(req,res)=>{
+  res.json({
+    status:200,
+    message:"Server is online"
+  })
+})
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+
