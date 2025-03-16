@@ -112,19 +112,19 @@ const CouponClaim = () => {
   }
 
   return (
-    <div className="bg-white shadow rounded-lg p-6 max-w-md mx-auto">
-      <h2 className="text-2xl font-bold text-center mb-6">Claim Your Coupon</h2>
+    <div className="max-w-md p-6 mx-auto bg-white rounded-lg shadow">
+      <h2 className="mb-6 text-2xl font-bold text-center">Claim Your Coupon</h2>
       
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
       {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
       
       {claimedCoupon ? (
-        <div className="p-4 border-2 border-dashed border-blue-500 rounded-lg mb-6">
+        <div className="p-4 mb-6 border-2 border-blue-500 border-dashed rounded-lg">
           <div className="text-center">
-            <div className="text-xl font-bold text-blue-600 mb-2">{claimedCoupon.code}</div>
-            <div className="text-sm text-gray-600 mb-4">{claimedCoupon.description}</div>
+            <div className="mb-2 text-xl font-bold text-blue-600">{claimedCoupon.code}</div>
+            <div className="mb-4 text-sm text-gray-600">{claimedCoupon.description}</div>
             {claimedCoupon.value && (
-              <div className="text-lg font-semibold text-green-600 mb-2">{claimedCoupon.value}</div>
+              <div className="mb-2 text-lg font-semibold text-green-600">{claimedCoupon.value}</div>
             )}
             {claimedCoupon.expiryDate && (
               <div className="text-xs text-gray-500">
@@ -134,18 +134,18 @@ const CouponClaim = () => {
           </div>
         </div>
       ) : (
-        <div className="text-center mb-6">
+        <div className="mb-6 text-center">
           {cooldown ? (
             <div className="mb-4">
-              <p className="text-gray-600 mb-2">You can claim another coupon in:</p>
+              <p className="mb-2 text-gray-600">You can claim another coupon in:</p>
               <div className="text-2xl font-bold text-blue-600">{formatTime(cooldownTime)}</div>
             </div>
           ) : (
             <>
               {available ? (
-                <p className="text-green-600 mb-4">Coupons are available! Claim yours now.</p>
+                <p className="mb-4 text-green-600">Coupons are available! Claim yours now.</p>
               ) : (
-                <p className="text-red-600 mb-4">Sorry, no coupons are currently available.</p>
+                <p className="mb-4 text-red-600">Sorry, no coupons are currently available.</p>
               )}
             </>
           )}
@@ -165,7 +165,7 @@ const CouponClaim = () => {
         <div className="mt-6 text-center">
           <button 
             onClick={checkAvailability} 
-            className="text-blue-600 hover:text-blue-800 text-sm underline"
+            className="text-sm text-blue-600 underline hover:text-blue-800"
           >
             Check availability again
           </button>
