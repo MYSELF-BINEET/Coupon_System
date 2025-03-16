@@ -5,6 +5,10 @@ import Alert from '../common/Alert';
 import Loading from '../common/Loading';
 import { Clock, Gift, RefreshCw, CheckCircle } from 'lucide-react';
 
+const ERROR_COOLDOWN_DURATION = 5; // 5 seconds cooldown after error
+const CLAIM_COOLDOWN_DURATION = 10; // 2 minutes cooldown between claims
+const AUTO_REFRESH_INTERVAL = 30; // Auto refresh every 30 seconds
+
 const CouponClaim = () => {
   const [available, setAvailable] = useState(false);
   const [claimedCoupon, setClaimedCoupon] = useState(null);
@@ -13,40 +17,81 @@ const CouponClaim = () => {
   const [success, setSuccess] = useState('');
   const [cooldown, setCooldown] = useState(false);
   const [cooldownTime, setCooldownTime] = useState(0);
+  const [refreshTimer, setRefreshTimer] = useState(AUTO_REFRESH_INTERVAL);
 
   useEffect(() => {
     checkAvailability();
-
-    // Check for cooldown in localStorage
+    
+    // Check for stored cooldown
     const storedCooldownUntil = localStorage.getItem('couponCooldownUntil');
     if (storedCooldownUntil) {
       const cooldownUntil = parseInt(storedCooldownUntil, 10);
       const now = Date.now();
-      
       if (cooldownUntil > now) {
-        setCooldown(true);
-        setCooldownTime(Math.ceil((cooldownUntil - now) / 1000));
-        
-        // Set interval to count down
-        const interval = setInterval(() => {
-          setCooldownTime(prev => {
-            if (prev <= 1) {
-              clearInterval(interval);
-              setCooldown(false);
-              localStorage.removeItem('couponCooldownUntil');
-              checkAvailability();
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-        
-        return () => clearInterval(interval);
+        startCooldown(Math.ceil((cooldownUntil - now) / 1000));
       } else {
         localStorage.removeItem('couponCooldownUntil');
       }
     }
+
+    // Set up auto-refresh interval
+    const autoRefreshInterval = setInterval(() => {
+      setRefreshTimer((prev) => {
+        if (prev <= 1) {
+          checkAvailability();
+          return AUTO_REFRESH_INTERVAL;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(autoRefreshInterval);
+    };
   }, []);
+
+  // const startCooldown = (seconds) => {
+  //   setCooldown(true);
+  //   setCooldownTime(seconds);
+  //   const interval = setInterval(() => {
+  //     setCooldownTime((prev) => {
+  //       if (prev <= 1) {
+  //         clearInterval(interval);
+  //         setCooldown(false);
+  //         localStorage.removeItem('couponCooldownUntil');
+  //         checkAvailability();
+  //         return 0;
+  //       }
+  //       return prev - 1;
+  //     });
+  //   }, 1000);
+  // };
+
+  let cooldownInterval = null; // Store interval reference
+
+const startCooldown = (seconds) => {
+  if (cooldownInterval) {
+    clearInterval(cooldownInterval); // Clear any previous interval
+  }
+
+  setCooldown(true);
+  setCooldownTime(seconds);
+
+  cooldownInterval = setInterval(() => {
+    setCooldownTime((prev) => {
+      if (prev <= 1) {
+        clearInterval(cooldownInterval);
+        cooldownInterval = null;
+        setCooldown(false);
+        localStorage.removeItem('couponCooldownUntil');
+        checkAvailability();
+        return 0;
+      }
+      return prev - 1;
+    });
+  }, 1000);
+};
+
 
   const checkAvailability = async () => {
     setLoading(true);
@@ -54,9 +99,15 @@ const CouponClaim = () => {
       const response = await checkCouponAvailability();
       setAvailable(response.available);
       setError('');
+      // Reset refresh timer after successful check
+      setRefreshTimer(AUTO_REFRESH_INTERVAL);
     } catch (err) {
       setError('Unable to check coupon availability. Please try again later.');
       console.error(err);
+      // Start a cooldown after an error
+      const cooldownUntil = Date.now() + ERROR_COOLDOWN_DURATION * 1000;
+      localStorage.setItem('couponCooldownUntil', cooldownUntil.toString());
+      startCooldown(ERROR_COOLDOWN_DURATION);
     } finally {
       setLoading(false);
     }
@@ -70,38 +121,60 @@ const CouponClaim = () => {
 
     try {
       const response = await claimCoupon();
-      // console.log(response);
-      setClaimedCoupon(response.coupon);
-      setSuccess('Congratulations! You have successfully claimed a coupon.');
-      setAvailable(false);
       
-      // Set cooldown
-      // const cooldownDuration = 3600000; // 1 hour in milliseconds
-      const cooldownDuration = 60 * 60 * 1000; // 2 minutes in milliseconds
-
-      const cooldownUntil = Date.now() + cooldownDuration;
-      localStorage.setItem('couponCooldownUntil', cooldownUntil.toString());
-      // localStorage.setItem('browserFingerprint',response.browserFingerprint);
-      setCooldown(true);
-      setCooldownTime(cooldownDuration / 1000);
-    } catch (err) {
-      // console.log(err);
-      if (err.response?.status === 429) {
-        setError('Rate limit exceeded. Please try again 1 hour later.');
+      if (response.coupon) {
+        setClaimedCoupon(response.coupon);
+        setSuccess('Congratulations! You have successfully claimed a coupon.');
+        setAvailable(false);
         
-        // Extract cooldown time from response if available
-        const retryAfter = err.response.headers['retry-after'];
-        if (retryAfter) {
-          const cooldownSeconds = parseInt(retryAfter, 10);
-          setCooldown(true);
-          setCooldownTime(cooldownSeconds);
-          
-          const cooldownUntil = Date.now() + (cooldownSeconds * 1000);
-          localStorage.setItem('couponCooldownUntil', cooldownUntil.toString());
+        // Set the normal claim cooldown
+        const cooldownUntil = Date.now() + CLAIM_COOLDOWN_DURATION * 1000;
+        localStorage.setItem('couponCooldownUntil', cooldownUntil.toString());
+        startCooldown(CLAIM_COOLDOWN_DURATION);
+        
+        // After claiming, automatically check for new availability when cooldown ends
+        setTimeout(() => {
+          checkAvailability();
+        }, CLAIM_COOLDOWN_DURATION * 1000);
+      } else if (response.status === 428) {
+        // Handle precondition required error (rate limiting)
+        let errorMessage = 'Rate limit exceeded. Please try again later.';
+        let cooldownRemaining = ERROR_COOLDOWN_DURATION;
+        
+        if (response.data?.data) {
+          if (response.data.data.message) {
+            errorMessage = response.data.data.message;
+          }
+          if (response.data.data.cooldownRemaining) {
+            cooldownRemaining = response.data.data.cooldownRemaining * 60; // Convert minutes to seconds
+            errorMessage += ` in ${response.data.data.cooldownRemaining} Minutes`;
+          }
         }
-      } else {
-        setError(err.response?.data?.message || 'Failed to claim coupon. Please try again later.');
+        
+        setError(errorMessage);
+        
+        const cooldownUntil = Date.now() + cooldownRemaining * 1000;
+        localStorage.setItem('couponCooldownUntil', cooldownUntil.toString());
+        startCooldown(cooldownRemaining);
+        
+        // After error, automatically check for new availability
+        setTimeout(() => {
+          checkAvailability();
+        }, cooldownRemaining * 1000);
       }
+    } catch (err) {
+      setError('An error occurred while claiming your coupon. Please try again later.');
+      console.error(err);
+      
+      // Start a cooldown after an error
+      const cooldownUntil = Date.now() + ERROR_COOLDOWN_DURATION * 1000;
+      localStorage.setItem('couponCooldownUntil', cooldownUntil.toString());
+      startCooldown(ERROR_COOLDOWN_DURATION);
+      
+      // After error, automatically check for new availability
+      setTimeout(() => {
+        checkAvailability();
+      }, ERROR_COOLDOWN_DURATION * 1000);
     } finally {
       setLoading(false);
     }
@@ -122,88 +195,55 @@ const CouponClaim = () => {
   }
 
   return (
-    <div className="max-w-md p-8 mx-auto bg-white shadow-lg rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="max-w-md p-8 mx-auto bg-white shadow-lg rounded-xl">
       <div className="flex items-center justify-center mb-6">
         <Gift className="mr-2 text-indigo-600" size={24} />
         <h2 className="text-2xl font-bold text-indigo-800">Claim Your Coupon</h2>
       </div>
-      
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
       {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
-      
       {claimedCoupon ? (
         <div className="p-6 mb-6 bg-white border-2 border-indigo-500 border-dashed rounded-lg">
           <div className="text-center">
-            <div className="flex items-center justify-center mb-4">
-              <CheckCircle className="mr-2 text-green-600" size={20} />
-              <span className="font-semibold text-green-600">Coupon Claimed!</span>
-            </div>
-            <div className="mb-4 text-2xl font-bold tracking-wide text-indigo-700">{claimedCoupon.code}</div>
-            <div className="px-4 mb-4 text-sm text-gray-600">{claimedCoupon.description}</div>
-            {claimedCoupon.value && (
-              <div className="inline-block p-2 mb-3 text-lg font-semibold text-green-600 rounded-md bg-green-50">
-                {claimedCoupon.value}
-              </div>
-            )}
-            {claimedCoupon.expiryDate && (
-              <div className="mt-2 text-xs text-gray-500">
-                Expires on: {new Date(claimedCoupon.expiryDate).toLocaleDateString()}
-              </div>
-            )}
+            <CheckCircle className="mr-2 text-green-600" size={20} />
+            <span className="font-semibold text-green-600">Coupon Claimed!</span>
+            <div className="text-2xl font-bold text-indigo-700">{claimedCoupon.code}</div>
+            <div className="text-sm text-gray-600">{claimedCoupon.description}</div>
           </div>
         </div>
       ) : (
         <div className="mb-6 text-center">
           {cooldown ? (
             <div className="p-4 mb-4 bg-blue-100 rounded-lg">
-              <p className="mb-2 text-gray-700">You can claim another coupon in:</p>
-              <div className="flex items-center justify-center">
-                <Clock className="mr-2 text-blue-600" size={20} />
-                <div className="text-2xl font-bold text-blue-700">{formatTime(cooldownTime)}</div>
-              </div>
+              <p>You can claim another coupon in:</p>
+              <div className="text-2xl font-bold text-blue-700">{formatTime(cooldownTime)}</div>
             </div>
           ) : (
-            <>
-              {available ? (
-                <div className="p-4 rounded-lg bg-green-50">
-                  <p className="flex items-center justify-center text-green-700">
-                    <CheckCircle className="mr-2" size={18} />
-                    Coupons are available! Claim yours now.
-                  </p>
-                </div>
-              ) : (
-                <div className="p-4 rounded-lg bg-red-50">
-                  <p className="text-red-700">Sorry, no coupons are currently available.</p>
-                </div>
-              )}
-            </>
+            available ? (
+              <div className="p-4 text-green-700 rounded-lg bg-green-50">Coupons are available! Claim yours now.</div>
+            ) : (
+              <div className="p-4 text-red-700 rounded-lg bg-red-50">Sorry, no coupons are currently available.</div>
+            )
           )}
         </div>
       )}
-      
       <div className="flex justify-center">
-        <Button 
-          disabled={!available || loading || cooldown}
-          onClick={handleClaimCoupon}
-          className={`px-6 py-3 font-semibold rounded-full transition-all duration-300 ${
+        <Button disabled={!available || loading || cooldown} onClick={handleClaimCoupon} className={`px-10 py-3 font-semibold rounded-full transition-all duration-300 ${
             !available || loading || cooldown
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
               : 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-lg'
-          }`}
-        >
+          }`}>
           {loading ? 'Processing...' : cooldown ? 'Cooldown Active' : 'Claim Coupon'}
         </Button>
       </div>
-      
       {!claimedCoupon && !cooldown && (
         <div className="mt-6 text-center">
-          <button 
-            onClick={checkAvailability} 
-            className="flex items-center justify-center mx-auto text-sm text-indigo-600 hover:text-indigo-800"
-          >
-            <RefreshCw className="mr-1" size={14} />
-            Check availability again
+          <button onClick={checkAvailability} className="flex items-center justify-center mx-auto text-sm text-indigo-600 hover:text-indigo-800">
+            <RefreshCw className="mr-1" size={14} /> Check availability again
           </button>
+          <div className="mt-2 text-xs text-gray-500">
+            <Clock className="inline mr-1" size={12} /> Auto-refreshing in {refreshTimer}s
+          </div>
         </div>
       )}
     </div>

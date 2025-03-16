@@ -53,9 +53,11 @@ exports.checkRecentClaims = async (req, res, next) => {
 
       // console.log(cooldownRemaining);
       
-      return res.status(429).json({
-        message: 'You recently claimed a coupon. Please try again later.',
-        cooldownRemaining
+      return res.status(428).json({
+        data:{
+          message: 'You recently claimed a coupon. Please try again later.',
+          cooldownRemaining:cooldownRemaining
+        }
       });
     }
 

@@ -6,6 +6,8 @@ const { couponClaimLimiter, checkRecentClaims } = require('../middleware/rateLim
 
 // Public routes
 router.get('/check-availability', claimController.checkAvailability);
-router.post('/claim-coupon', couponClaimLimiter, checkRecentClaims, claimController.claimCoupon);
+router.post('/claim-coupon', couponClaimLimiter,checkRecentClaims, claimController.claimCoupon);
 
 module.exports = router;
+
+// 
