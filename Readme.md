@@ -1,1 +1,1 @@
-This is a Coupon system application  created by Bineet Pradhan
+This is a Coupon system application  created by Bineet Pradhan(MYSELF-BINEET)
