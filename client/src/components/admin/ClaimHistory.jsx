@@ -19,6 +19,7 @@ const ClaimHistory = () => {
     setIsRefreshing(true);
     try {
       const data = await getClaimHistory();
+      console.log(data);
       setClaims(data);
       setError("");
     } catch (err) {
