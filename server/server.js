@@ -37,7 +37,7 @@ app.get('/api/status', (req, res) => {
 app.get("/api/online",(req,res)=>{
   res.json({
     status:200,
-    message:"Server is online"
+    message:"Server is Okk ... Url is ready .... Go "
   })
 })
 
