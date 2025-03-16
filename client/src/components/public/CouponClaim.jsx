@@ -3,6 +3,7 @@ import { checkCouponAvailability, claimCoupon } from '../../api/public';
 import Button from '../common/Button';
 import Alert from '../common/Alert';
 import Loading from '../common/Loading';
+import { Clock, Gift, RefreshCw, CheckCircle } from 'lucide-react';
 
 const CouponClaim = () => {
   const [available, setAvailable] = useState(false);
@@ -108,26 +109,39 @@ const CouponClaim = () => {
   };
 
   if (loading && !cooldown) {
-    return <Loading />;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loading />
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-md p-6 mx-auto bg-white rounded-lg shadow">
-      <h2 className="mb-6 text-2xl font-bold text-center">Claim Your Coupon</h2>
+    <div className="max-w-md p-8 mx-auto bg-white rounded-xl shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50">
+      <div className="flex items-center justify-center mb-6">
+        <Gift className="mr-2 text-indigo-600" size={24} />
+        <h2 className="text-2xl font-bold text-indigo-800">Claim Your Coupon</h2>
+      </div>
       
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
       {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
       
       {claimedCoupon ? (
-        <div className="p-4 mb-6 border-2 border-blue-500 border-dashed rounded-lg">
+        <div className="p-6 mb-6 border-2 border-indigo-500 border-dashed rounded-lg bg-white">
           <div className="text-center">
-            <div className="mb-2 text-xl font-bold text-blue-600">{claimedCoupon.code}</div>
-            <div className="mb-4 text-sm text-gray-600">{claimedCoupon.description}</div>
+            <div className="flex items-center justify-center mb-4">
+              <CheckCircle className="text-green-600 mr-2" size={20} />
+              <span className="text-green-600 font-semibold">Coupon Claimed!</span>
+            </div>
+            <div className="mb-4 text-2xl font-bold text-indigo-700 tracking-wide">{claimedCoupon.code}</div>
+            <div className="mb-4 text-sm text-gray-600 px-4">{claimedCoupon.description}</div>
             {claimedCoupon.value && (
-              <div className="mb-2 text-lg font-semibold text-green-600">{claimedCoupon.value}</div>
+              <div className="mb-3 text-lg font-semibold text-green-600 p-2 bg-green-50 rounded-md inline-block">
+                {claimedCoupon.value}
+              </div>
             )}
             {claimedCoupon.expiryDate && (
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-500 mt-2">
                 Expires on: {new Date(claimedCoupon.expiryDate).toLocaleDateString()}
               </div>
             )}
@@ -136,16 +150,26 @@ const CouponClaim = () => {
       ) : (
         <div className="mb-6 text-center">
           {cooldown ? (
-            <div className="mb-4">
-              <p className="mb-2 text-gray-600">You can claim another coupon in:</p>
-              <div className="text-2xl font-bold text-blue-600">{formatTime(cooldownTime)}</div>
+            <div className="mb-4 p-4 bg-blue-100 rounded-lg">
+              <p className="mb-2 text-gray-700">You can claim another coupon in:</p>
+              <div className="flex items-center justify-center">
+                <Clock className="mr-2 text-blue-600" size={20} />
+                <div className="text-2xl font-bold text-blue-700">{formatTime(cooldownTime)}</div>
+              </div>
             </div>
           ) : (
             <>
               {available ? (
-                <p className="mb-4 text-green-600">Coupons are available! Claim yours now.</p>
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <p className="text-green-700 flex items-center justify-center">
+                    <CheckCircle className="mr-2" size={18} />
+                    Coupons are available! Claim yours now.
+                  </p>
+                </div>
               ) : (
-                <p className="mb-4 text-red-600">Sorry, no coupons are currently available.</p>
+                <div className="p-4 bg-red-50 rounded-lg">
+                  <p className="text-red-700">Sorry, no coupons are currently available.</p>
+                </div>
               )}
             </>
           )}
@@ -154,8 +178,13 @@ const CouponClaim = () => {
       
       <div className="flex justify-center">
         <Button 
-          disabled={!available || loading || cooldown} 
+          disabled={!available || loading || cooldown}
           onClick={handleClaimCoupon}
+          className={`px-6 py-3 font-semibold rounded-full transition-all duration-300 ${
+            !available || loading || cooldown
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-lg'
+          }`}
         >
           {loading ? 'Processing...' : cooldown ? 'Cooldown Active' : 'Claim Coupon'}
         </Button>
@@ -165,8 +194,9 @@ const CouponClaim = () => {
         <div className="mt-6 text-center">
           <button 
             onClick={checkAvailability} 
-            className="text-sm text-blue-600 underline hover:text-blue-800"
+            className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center justify-center mx-auto"
           >
+            <RefreshCw className="mr-1" size={14} />
             Check availability again
           </button>
         </div>
