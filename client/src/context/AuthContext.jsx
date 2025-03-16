@@ -1,8 +1,9 @@
 import React, { createContext, useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { adminLogin, adminLogout } from '../api/admin';
+import toast from 'react-hot-toast';
 
-export const AuthContext = createContext(); // Ensure context is created outside
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -38,12 +39,17 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       await adminLogout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
       Cookies.remove('admin_token');
       setIsAuthenticated(false);
       setAdminData(null);
+      // toast.success("Logout Successful");
+
+      // Ensure navigation happens only after state updates
+      // setTimeout(() => navigate("/"), 0);
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -55,5 +61,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Add default export for consistency
 export default AuthContext;

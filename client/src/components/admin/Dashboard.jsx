@@ -4,9 +4,15 @@ import { getAllCoupons, getClaimHistory } from "../../api/admin";
 import Button from "../common/Button";
 import Loading from "../common/Loading";
 import { RefreshCw, LogOut, Gift, Tag, CheckCircle, Users } from "lucide-react";
+import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+
+
 
 const Dashboard = () => {
   const { adminData, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
+  
   const [stats, setStats] = useState({
     totalCoupons: 0,
     availableCoupons: 0,
@@ -19,6 +25,36 @@ const Dashboard = () => {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+
+  const handleSubmit = async () => {
+    // e.preventDefault();
+    
+    // if (!credentials.username || !credentials.password) {
+    //   toast.error("Please enter both username and password");
+    //   return;
+    // }
+  
+    try {
+      const logoutPromise = logout();
+  
+      await toast.promise(
+        logoutPromise,
+        {
+          loading: "Please wait...",
+          success: "Logout successful!",
+          error: "Failed to logout. Please try again.",
+        }
+      );
+  
+      await logoutPromise;
+      // navigate("/");
+      window.location.href = "/";
+    } catch (err) {
+      console.error("Logout failed:", err);
+      toast.error("Failed to logout.")
+    }
+  };
 
   const fetchDashboardData = async () => {
     if (!refreshing) setLoading(true);
@@ -80,7 +116,7 @@ const Dashboard = () => {
               </span>
               <Button
                 variant="ghost"
-                onClick={logout}
+                onClick={handleSubmit}
                 className="p-2 text-sm text-white rounded-lg hover:bg-white/20"
               >
                 <LogOut size={18} />

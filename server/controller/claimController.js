@@ -17,6 +17,7 @@ exports.checkAvailability = async (req, res) => {
 exports.claimCoupon = async (req, res) => {
   try {
     const ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    console.log(ipAddress);
     const browserFingerprint = couponService.generateFingerprint(req, res);
 
     // console.log(ipAddress);

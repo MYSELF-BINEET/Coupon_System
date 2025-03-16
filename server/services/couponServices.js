@@ -129,7 +129,9 @@ class CouponService {
         id: coupon._id,
         code: coupon.code,
         description: coupon.description
-      }
+      },
+      ipAddress:ipAddress,
+      browserFingerprint:browserFingerprint
     };
   }
   
@@ -146,14 +148,14 @@ class CouponService {
    * Generate a fingerprint cookie if not present
    */
   generateFingerprint(req, res) {
-    const fingerprint = req.cookies.browserFingerprint;
+    const fingerprint = req.cookies.browserFingerprint || uuidv4();
 
-    console.log(fingerprint);
+    // console.log(fingerprint);
     
     // Set cookie if not already set
     if (!req.cookies.browserFingerprint) {
       res.cookie('browserFingerprint', fingerprint, {
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        // maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production'
       });

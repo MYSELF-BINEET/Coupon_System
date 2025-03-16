@@ -70,19 +70,24 @@ const CouponClaim = () => {
 
     try {
       const response = await claimCoupon();
+      // console.log(response);
       setClaimedCoupon(response.coupon);
       setSuccess('Congratulations! You have successfully claimed a coupon.');
       setAvailable(false);
       
       // Set cooldown
-      const cooldownDuration = 1800000; // 30 minutes in milliseconds
+      // const cooldownDuration = 3600000; // 1 hour in milliseconds
+      const cooldownDuration = 60 * 60 * 1000; // 2 minutes in milliseconds
+
       const cooldownUntil = Date.now() + cooldownDuration;
       localStorage.setItem('couponCooldownUntil', cooldownUntil.toString());
+      // localStorage.setItem('browserFingerprint',response.browserFingerprint);
       setCooldown(true);
       setCooldownTime(cooldownDuration / 1000);
     } catch (err) {
+      // console.log(err);
       if (err.response?.status === 429) {
-        setError('Rate limit exceeded. Please try again later.');
+        setError('Rate limit exceeded. Please try again 1 hour later.');
         
         // Extract cooldown time from response if available
         const retryAfter = err.response.headers['retry-after'];
@@ -117,7 +122,7 @@ const CouponClaim = () => {
   }
 
   return (
-    <div className="max-w-md p-8 mx-auto bg-white rounded-xl shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="max-w-md p-8 mx-auto bg-white shadow-lg rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50">
       <div className="flex items-center justify-center mb-6">
         <Gift className="mr-2 text-indigo-600" size={24} />
         <h2 className="text-2xl font-bold text-indigo-800">Claim Your Coupon</h2>
@@ -127,21 +132,21 @@ const CouponClaim = () => {
       {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
       
       {claimedCoupon ? (
-        <div className="p-6 mb-6 border-2 border-indigo-500 border-dashed rounded-lg bg-white">
+        <div className="p-6 mb-6 bg-white border-2 border-indigo-500 border-dashed rounded-lg">
           <div className="text-center">
             <div className="flex items-center justify-center mb-4">
-              <CheckCircle className="text-green-600 mr-2" size={20} />
-              <span className="text-green-600 font-semibold">Coupon Claimed!</span>
+              <CheckCircle className="mr-2 text-green-600" size={20} />
+              <span className="font-semibold text-green-600">Coupon Claimed!</span>
             </div>
-            <div className="mb-4 text-2xl font-bold text-indigo-700 tracking-wide">{claimedCoupon.code}</div>
-            <div className="mb-4 text-sm text-gray-600 px-4">{claimedCoupon.description}</div>
+            <div className="mb-4 text-2xl font-bold tracking-wide text-indigo-700">{claimedCoupon.code}</div>
+            <div className="px-4 mb-4 text-sm text-gray-600">{claimedCoupon.description}</div>
             {claimedCoupon.value && (
-              <div className="mb-3 text-lg font-semibold text-green-600 p-2 bg-green-50 rounded-md inline-block">
+              <div className="inline-block p-2 mb-3 text-lg font-semibold text-green-600 rounded-md bg-green-50">
                 {claimedCoupon.value}
               </div>
             )}
             {claimedCoupon.expiryDate && (
-              <div className="text-xs text-gray-500 mt-2">
+              <div className="mt-2 text-xs text-gray-500">
                 Expires on: {new Date(claimedCoupon.expiryDate).toLocaleDateString()}
               </div>
             )}
@@ -150,7 +155,7 @@ const CouponClaim = () => {
       ) : (
         <div className="mb-6 text-center">
           {cooldown ? (
-            <div className="mb-4 p-4 bg-blue-100 rounded-lg">
+            <div className="p-4 mb-4 bg-blue-100 rounded-lg">
               <p className="mb-2 text-gray-700">You can claim another coupon in:</p>
               <div className="flex items-center justify-center">
                 <Clock className="mr-2 text-blue-600" size={20} />
@@ -160,14 +165,14 @@ const CouponClaim = () => {
           ) : (
             <>
               {available ? (
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <p className="text-green-700 flex items-center justify-center">
+                <div className="p-4 rounded-lg bg-green-50">
+                  <p className="flex items-center justify-center text-green-700">
                     <CheckCircle className="mr-2" size={18} />
                     Coupons are available! Claim yours now.
                   </p>
                 </div>
               ) : (
-                <div className="p-4 bg-red-50 rounded-lg">
+                <div className="p-4 rounded-lg bg-red-50">
                   <p className="text-red-700">Sorry, no coupons are currently available.</p>
                 </div>
               )}
@@ -194,7 +199,7 @@ const CouponClaim = () => {
         <div className="mt-6 text-center">
           <button 
             onClick={checkAvailability} 
-            className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center justify-center mx-auto"
+            className="flex items-center justify-center mx-auto text-sm text-indigo-600 hover:text-indigo-800"
           >
             <RefreshCw className="mr-1" size={14} />
             Check availability again

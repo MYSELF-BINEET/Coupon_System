@@ -23,13 +23,16 @@ exports.couponClaimLimiter = rateLimit({
 // Custom middleware to check for recent claims
 exports.checkRecentClaims = async (req, res, next) => {
   try {
+    // console.log(req);
     const ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    const browserFingerprint = req.body.fingerprint || req.cookies.browserFingerprint;
+    const browserFingerprint =  req.cookies.browserFingerprint;
+    // console.log(browserFingerprint);
+    // console.log(ipAddress);
     
     // Skip check if no fingerprint is available yet
-    if (!browserFingerprint) {
-      return next();
-    }
+    // if (!browserFingerprint) {
+    //   return next();
+    // }
     
     // Check for recent claims within cooldown period
     const recentClaim = await Claim.findOne({
@@ -39,18 +42,23 @@ exports.checkRecentClaims = async (req, res, next) => {
       ],
       dateTime: { $gt: new Date(Date.now() - COUPON_COOLDOWN_MS) }
     });
+
+    // console.log(recentClaim);
     
     if (recentClaim) {
       // Calculate remaining cooldown time in minutes
       const cooldownRemaining = Math.ceil(
         (COUPON_COOLDOWN_MS - (Date.now() - recentClaim.dateTime)) / (60 * 1000)
       );
+
+      // console.log(cooldownRemaining);
       
       return res.status(429).json({
         message: 'You recently claimed a coupon. Please try again later.',
         cooldownRemaining
       });
     }
+
     
     next();
   } catch (error) {

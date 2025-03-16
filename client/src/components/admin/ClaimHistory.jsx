@@ -67,6 +67,9 @@ const ClaimHistory = () => {
               <th className="px-6 py-3 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase bg-gray-50 rounded-tr-md">
                 Claim Date
               </th>
+              <th className="px-6 py-3 text-xs font-semibold tracking-wider text-left text-gray-600 uppercase bg-gray-50 rounded-tr-md">
+                Claim Time
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -86,7 +89,10 @@ const ClaimHistory = () => {
                     {claim.browserFingerprint}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                    {new Date(claim.dateTime).toLocaleString()}
+                    {new Date(claim.dateTime).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                    {new Date(claim.dateTime).toLocaleTimeString()}
                   </td>
                 </tr>
               ))
