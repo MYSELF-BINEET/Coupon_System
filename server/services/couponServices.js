@@ -146,7 +146,9 @@ class CouponService {
    * Generate a fingerprint cookie if not present
    */
   generateFingerprint(req, res) {
-    const fingerprint = req.cookies.browserFingerprint || uuidv4();
+    const fingerprint = req.cookies.browserFingerprint;
+
+    console.log(fingerprint);
     
     // Set cookie if not already set
     if (!req.cookies.browserFingerprint) {
