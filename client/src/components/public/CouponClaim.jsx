@@ -128,9 +128,11 @@ const startCooldown = (seconds) => {
         setAvailable(false);
         
         // Set the normal claim cooldown
-        const cooldownUntil = Date.now() + CLAIM_COOLDOWN_DURATION * 1000;
+        const cooldownUntil = Date.now() + 60 * 60 * 1000;
         localStorage.setItem('couponCooldownUntil', cooldownUntil.toString());
-        startCooldown(CLAIM_COOLDOWN_DURATION);
+        setCooldown(true);
+        setCooldownTime(cooldownUntil);
+        startCooldown(cooldownUntil);
         
         // After claiming, automatically check for new availability when cooldown ends
         setTimeout(() => {
@@ -139,7 +141,7 @@ const startCooldown = (seconds) => {
       } else if (response.status === 428) {
         // Handle precondition required error (rate limiting)
         let errorMessage = 'Rate limit exceeded. Please try again later.';
-        let cooldownRemaining = ERROR_COOLDOWN_DURATION;
+        let cooldownRemaining = 60;
         
         if (response.data?.data) {
           if (response.data.data.message) {
